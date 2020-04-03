@@ -127,7 +127,6 @@ int main(int argc, char* argv[])
             memset(path_a, 0, sizeof(path_a));
             memset(path_b, 0, sizeof(path_b));
 
-            // mencari nama file, ekstensi, dan path
             strcpy(nameFile, argv[i]);
             spesial(nameFile, newFile, akhir);
 
@@ -135,6 +134,7 @@ int main(int argc, char* argv[])
             strcat(newFile, akhir);
             strcat(path_a, "/home/hao/Documents/Praktikum3/soal3/");
             strcat(path_a, newFile);
+
             strcat(path_b, "/home/hao/Documents/Praktikum3/soal3/");
             strcat(path_b, akhir);
             strcat(path_b, "/");
