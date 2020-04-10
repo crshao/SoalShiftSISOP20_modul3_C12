@@ -1,167 +1,162 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<sys/wait.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <time.h>
+#include <wait.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 #include<sys/types.h>
+#include<sys/stat.h>
+#include <syslog.h>
 #include <sys/stat.h>
-#include<unistd.h>
-#include<pthread.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <pthread.h>
+#include <limits.h>
 
-int statt;
-pthread_t tid[3];
+pthread_t tid[500]; //max 500 thread
+typedef struct arg_struct {
+    char asal[1000];
+    char cwd[1000];
+}arg_struct;
 
-struct struct1
+int is_regular_file(const char *path) //jika 0 bukan file
 {
-    char *w[1], *x[1], *y[1], *z[1];
-};
-
-void* pindah(void *param)
-{
-    struct struct1 *par = (struct struct1*) param;
-    
-    int ch;
-
-    FILE *file1 = fopen(*par->z, "r");
-    FILE *file2 = fopen(*par->w, "w");
-
-    //jika error
-    if (!file1) {
-            printf("file tidak bisa dibuka untuk di-read.\n");
-            fclose(file2);
-            return 0;
-    }
-    
-    if (!file2) {
-            printf("file tidak bisa dibuka untuk di-write\n");
-            return 0;
-    }
-    
-    //copy
-    while ((ch = fgetc(file1)) != EOF) {
-            fputc(ch, file2);
-    }
-
-    fclose(file1);
-    fclose(file2);
-
-    remove(*par->z);
-
-	return NULL;
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
 }
 
-void *make_directory(void *a)
-{
-    struct struct1 *x = (struct struct1*)a ;
-    statt = 1;
-    mkdir(*x->y, 0777);
-	return NULL;
-}
-
-static void spesial(char *nameFile, char *newFile, char *akhir)
-{
-    int titik, i, j;
- 
-    i = strlen(nameFile) - 1;
- 
-    while (i && nameFile[i] != '.') //cari titik
+void pindahFile(char *argv, char *cwd){
+//   printf("stringvoid = %s\n", argv);
+//   printf("stringvoid = %s\n", cwd);
+  
+  char string[1000];
+  strcpy(string, argv);
+  int isFile = is_regular_file(string);
+  char dot = '.'; 
+  char slash = '/';
+  char* tipe = strrchr(string, dot); 
+  char* nama = strrchr(string, slash);
+  
+  char tipeLow[100];
+  if(tipe)
+  {
+    if((tipe[strlen(tipe)-1] >= 'a' && tipe[strlen(tipe)-1] <= 'z') || (tipe[strlen(tipe)-1] >= 'A' && tipe[strlen(tipe)-1] <= 'Z'))
     {
-        i--;
+      strcpy(tipeLow, tipe);
+      for(int i = 0; tipeLow[i]; i++){
+        tipeLow[i] = tolower(tipeLow[i]);
+      }
     }
- 
-    //cari titik
-    if (i)
-    {
-        titik = i;
+  }
+  else
+  {
+    if(!isFile){
+      printf("ini adalah folder, salah argumen\n");
+    //   mkdir(nama, 0777);
+      return;
     }
     else
     {
-        titik = strlen(nameFile); //tidak ketemu
- 
-        i = strlen(nameFile) - 1; //reset
+      strcpy(tipeLow, " Unknown"); //tanpa ekstensi
     }
-    while (i && nameFile[i] != '/')
-    {
-        if (nameFile[i] != '/')
-            i--;
-    }
-    if (nameFile[i] == '/') //jika ada /
-        i++;
-         
-    int x = 0;
+  }
+    mkdir((tipeLow + 1), 0777); //bikin folder ekstensi
 
-    while (i < titik)
-    {
-        newFile[x] = nameFile[i];
-        x++;
-        i++;
-    }
+    size_t len = 0 ;
+    // strcpy
+    char a[1000] ; //res
+    strcpy(a, argv);
+    char b[1000] ; //des
+    strcpy(b, cwd);
+    strcat(b, "/");
+    strcat(b, tipeLow+1);
+    strcat(b, nama);
+    printf("a = %s\n", a);
 
-    int y = 0;
-    j = strlen(nameFile) - 1;
-    while (i<j)
-    {
-        akhir[y] = nameFile[i+1];
-        y++;
-        i++;
-    }
-    
-    //terminate
-    newFile[x] = '\0';
-    akhir[y] = '\0';
+    printf("b = %s\n", b);
+
+    rename(a, b);
+    remove(a);
 }
 
-int main(int argc, char* argv[])
-{
-    char nameFile[100], newFile[100];
-    char akhir[10];
-    char path_a[100], path_b[100];
-    int i, j;
+void *pindahf(void* arg){
+  arg_struct args = *(arg_struct*) arg;
+//   printf("stringthr = %s\n", args.asal);
+  // printf("stringthr = %s\n", args.cwd);
+  pindahFile(args.asal, args.cwd);
+  pthread_exit(0);
+}
 
-    if (strcmp (argv[1],"-f") == 0)
+void sortHere(char *asal){
+  arg_struct args;
+  // args.cwd = "/home/rapuyy/modul3";
+  strcpy(args.cwd,"/home/rapuyy/modul3");
+  DIR *dirp;
+    struct dirent *entry;
+    dirp = opendir(asal);
+    int index = 0;
+    while((entry = readdir(dirp)) != NULL)
     {
-        for (i = 2; i < argc; i++) //loop sesuai jlh argumen
+      if(entry->d_type == DT_REG)
+      {
+        char namafile[105];
+        sprintf(namafile, "%s/%s", asal, entry->d_name);
+        strcpy(args.asal, namafile);
+        if(strcmp(namafile, "/home/rapuyy/modul3/no3.c")!=0)
         {
-            memset(nameFile, 0, sizeof(nameFile));
-            memset(newFile, 0, sizeof(newFile));
-            memset(akhir, 0, sizeof(akhir));
-            memset(path_a, 0, sizeof(path_a));
-            memset(path_b, 0, sizeof(path_b));
-
-            strcpy(nameFile, argv[i]);
-            spesial(nameFile, newFile, akhir);
-
-            strcat(newFile, ".");
-            strcat(newFile, akhir);
-            strcat(path_a, "/home/hao/Documents/Praktikum3/soal3/");
-            strcat(path_a, newFile);
-
-            strcat(path_b, "/home/hao/Documents/Praktikum3/soal3/");
-            strcat(path_b, akhir);
-            strcat(path_b, "/");
-            strcat(path_b, newFile);
-
-            // ditaruh dalam struct
-            struct struct1 *temp = (struct struct1*) malloc (sizeof (struct struct1));
-            *temp -> x = newFile;
-            *temp -> y = akhir;
-            *temp -> z = path_a;
-            *temp -> w = path_b;
-
-            int flag = 0;
-            statt = 0;
-
-            //membuat thread
-            while (flag < 2)
-            {
-                if(flag == 0){
-                    pthread_create(&(tid[flag]),NULL,&make_directory, (void *)temp);
-                } else {
-                    pthread_create(&(tid[flag]),NULL,&pindah,(void *)temp);
-                }
-                pthread_join(tid[flag],NULL);
-                flag++;
-            }
+            pthread_create(&tid[index], NULL, pindahf, (void *)&args);
+            printf("%s\n", namafile);
+            sleep(1);
+            index++;    
         }
+        
+      }
     }
-    return 0;
 }
+int main(int argc, char* argv[]) 
+{ 
+
+  // char cwd[1000];
+  arg_struct args;
+  getcwd(args.cwd, sizeof(args.cwd));
+
+  
+  if(strcmp(argv[1],"-f")==0)//command -f--------------------------------------------------------------
+  {
+    int index = 0;
+    for (int i = 2; i < argc; i++)
+    {
+      strcpy(args.asal, argv[i]);
+      pthread_create(&tid[index], NULL, pindahf, (void *)&args);
+      sleep(1);
+      index++;
+    }
+    for (int i = 0; i < index; i++) {
+        pthread_join(tid[i], NULL);
+    }
+  }
+  else if(strcmp(argv[1],"*")==0)
+  {
+    char asal[] = "/home/rapuyy/modul3";
+    
+    sortHere(asal);
+  }
+  else if(strcmp(argv[1],"-d")==0){
+      char asal[1000];
+      strcpy(asal, argv[2]);
+      sortHere(asal);
+    //   rename(asal, args.cwd);
+    //   sortHere(asal);
+  }
+  else
+  {
+      printf("salah argumen bos\n");
+      return 0;
+  }
+  
+	return 0; 
+} 
