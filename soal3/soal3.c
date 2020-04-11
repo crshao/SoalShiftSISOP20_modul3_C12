@@ -94,7 +94,7 @@ void *pindahf(void* arg){
 void sortHere(char *asal){
   arg_struct args;
   // args.cwd = "/home/rapuyy/modul3";
-  strcpy(args.cwd,"/home/rapuyy/modul3");
+  strcpy(args.cwd,"/home/hao/Documents/Praktikum3/soal3");
   DIR *dirp;
     struct dirent *entry;
     dirp = opendir(asal);
@@ -106,7 +106,7 @@ void sortHere(char *asal){
         char namafile[105];
         sprintf(namafile, "%s/%s", asal, entry->d_name);
         strcpy(args.asal, namafile);
-        if(strcmp(namafile, "/home/rapuyy/modul3/no3.c")!=0)
+        if(strcmp(namafile, "/home/hao/Documents/Praktikum3/soal3/soal3.c")!=0)
         {
             pthread_create(&tid[index], NULL, pindahf, (void *)&args);
             printf("%s\n", namafile);
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
   }
   else if(strcmp(argv[1],"*")==0)
   {
-    char asal[] = "/home/rapuyy/modul3";
+    char asal[] = "/home/hao/Documents/Praktikum3/soal3";
     
     sortHere(asal);
   }
@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
   }
   else
   {
-      printf("salah argumen bos\n");
+      printf("salah argumen\n");
       return 0;
   }
   
