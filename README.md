@@ -84,7 +84,6 @@ Di sini, setiap mendapatkan input username dan password baik dari login maupun r
 
 #
 
-### Screen 2
 Berikut source code Screen 2, untuk menangani find player agar dapat memulai game:
 ```c
 void *finding()
